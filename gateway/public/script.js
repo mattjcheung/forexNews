@@ -20,10 +20,8 @@ function loadChart(symbol) {
     const container = document.getElementById('tradingview_widget');
     if (!container) return;
     
-    // Clear the container
     container.innerHTML = '';
 
-    // If script isn't loaded, load it. If it is, just create the widget.
     if (typeof TradingView === 'undefined') {
         const script = document.createElement('script');
         script.id = 'tradingview-sdk';
@@ -36,11 +34,10 @@ function loadChart(symbol) {
 }
 
 function createWidget(symbol) {
-    // Small timeout ensures the DOM element is ready for the library
     setTimeout(() => {
         if (document.getElementById('tradingview_widget')) {
             new TradingView.widget({
-                "autosize": true, // This is better than "100%" for grid layouts
+                "autosize": true,
                 "symbol": symbol,
                 "interval": "D",
                 "timezone": "Etc/UTC",
@@ -63,7 +60,6 @@ function selectWatchlistItem(el, symbol) {
     loadChart(symbol);
 }
 
-// Logic: Max 5, FIFO, and Jump duplicates to top
 document.getElementById('addSymbolBtn').addEventListener('click', () => {
     const input = document.getElementById('newSymbol');
     const symbol = input.value.toUpperCase().trim();
@@ -71,58 +67,122 @@ document.getElementById('addSymbolBtn').addEventListener('click', () => {
 
     const existingIndex = watchlist.findIndex(i => i.symbol === symbol);
     if (existingIndex > -1) {
-        watchlist.splice(existingIndex, 1); // Remove duplicate
+        watchlist.splice(existingIndex, 1);
     } else if (watchlist.length >= 5) {
-        watchlist.pop(); // FIFO: Remove oldest
+        watchlist.pop();
     }
 
-    watchlist.unshift({ label: symbol, symbol: symbol }); // Add to top
+    watchlist.unshift({ label: symbol, symbol: symbol });
     input.value = '';
     renderWatchlist();
     loadChart(symbol);
 });
 
-// RHS Chatbot Toggle Logic
+// --- UI TOGGLES ---
 const mainLayout = document.getElementById('mainLayout');
 const toggleBtn = document.getElementById('toggleRHS');
 
 toggleBtn.addEventListener('click', () => {
-    // 1. Toggle the class on the layout
     const isCollapsed = mainLayout.classList.toggle('rhs-collapsed');
-    
-    // 2. Update the button text based on the new state
     if (isCollapsed) {
         toggleBtn.textContent = 'Open AI Assistant';
-        toggleBtn.classList.remove('active'); // Optional: for styling
+        toggleBtn.classList.remove('active');
     } else {
         toggleBtn.textContent = 'Close Assistant';
-        toggleBtn.classList.add('active');    // Optional: for styling
+        toggleBtn.classList.add('active');
     }
 });
 
-// Simple Chatbot Display Logic
-document.getElementById('sendBtn').addEventListener('click', () => {
-    const input = document.getElementById('ragInput');
-    const text = input.value.trim();
+// --- CHATBOT LOGIC (INTEGRATED) ---
+const chatHistory = document.getElementById('chatHistory');
+const ragInput = document.getElementById('ragInput');
+const sendBtn = document.getElementById('sendBtn');
+
+async function handleChat() {
+    const text = ragInput.value.trim();
     if (!text) return;
 
+    // 1. Add User Message
     appendMessage('user', text);
-    input.value = '';
+    ragInput.value = '';
 
-    // Placeholder for AI response
-    setTimeout(() => {
-        appendMessage('ai', "Servers are down. Please try again later.");
-    }, 800);
-});
+    // 2. Add Temporary Loading Message
+    const loadingId = 'loading-' + Date.now();
+    appendMessage('ai', "Analysing market data...", loadingId);
 
-function appendMessage(sender, text) {
-    const history = document.getElementById('chatHistory');
+    try {
+        // 3. Send to Backend
+        const resp = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: text })
+        });
+        const data = await resp.json();
+
+        // 4. Update Loading Message with Reply
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) {
+            loadingEl.innerText = data.reply;
+        } else {
+            // Fallback if element was removed for some reason
+            appendMessage('ai', data.reply);
+        }
+    } catch (err) {
+        const loadingEl = document.getElementById(loadingId);
+        if (loadingEl) loadingEl.innerText = "Error: Could not reach intelligence server.";
+    }
+}
+
+function appendMessage(sender, text, id = null) {
     const div = document.createElement('div');
     div.className = `msg ${sender}-msg`;
+    if (id) div.id = id;
     div.innerText = text;
-    history.appendChild(div);
-    history.scrollTop = history.scrollHeight;
+    chatHistory.appendChild(div);
+    chatHistory.scrollTop = chatHistory.scrollHeight;
 }
+
+// Attach Event Listeners
+sendBtn.onclick = handleChat;
+ragInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleChat();
+});
+
+// --- REFRESH AI & SCRAPE BUTTON LOGIC ---
+document.getElementById('refreshAllBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('refreshAllBtn');
+    const originalText = btn.innerText;
+    
+    // UI Feedback
+    btn.innerText = "Processing Scrape & AI...";
+    btn.disabled = true;
+
+    try {
+        // This calls the endpoint that triggers Redis AND generates a new AI Report
+        const resp = await fetch('/api/refresh-all', { method: 'POST' });
+        const data = await resp.json();
+
+        // Update the UI with the new report immediately
+        if (data.report) {
+            document.getElementById('summaryText').innerText = data.report;
+            document.getElementById('lastUpdated').innerText = `Last Updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+        }
+
+        // Refresh the news feed cards as well
+        refreshFeed();
+
+        btn.innerText = "System Updated";
+        setTimeout(() => { 
+            btn.innerText = originalText; 
+            btn.disabled = false; 
+        }, 3000);
+
+    } catch (err) {
+        console.error("Refresh All Error:", err);
+        btn.innerText = "Error: Try Again";
+        btn.disabled = false;
+    }
+});
 
 // --- NEWS FEED LOGIC ---
 async function refreshFeed() {
@@ -152,11 +212,13 @@ async function refreshFeed() {
     }
 }
 
-// --- PERIODIC REPORT LOGIC ---
+// --- REPORT LOGIC ---
 async function loadMarketReport() {
-    const reportText = document.getElementById('summaryText'); // Ensure this ID exists in HTML
-    const timeLabel = document.getElementById('lastUpdated');  // Ensure this ID exists in HTML
+    const reportText = document.getElementById('summaryText');
+    const timeLabel = document.getElementById('lastUpdated');
     
+    if (!reportText || !timeLabel) return;
+
     const resp = await fetch('/api/market-report');
     const data = await resp.json();
     
@@ -188,6 +250,10 @@ document.getElementById('sendBtn').onclick = sendChat;
 document.getElementById('refreshAllBtn').addEventListener('click', async () => {
     const btn = document.getElementById('refreshAllBtn');
     btn.innerText = "Processing Scrape & AI...";
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('refreshBtn');
+    const originalText = btn.innerText;
+    btn.innerText = "Scraping...";
     btn.disabled = true;
 
     try {
