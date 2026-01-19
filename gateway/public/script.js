@@ -204,6 +204,99 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
     }
 });
 
+// --- HEADER BACKGROUND ANIMATION ---
+let frameCount = 0;
+(function initHeaderChart() {
+    const canvas = document.getElementById('marketChartBg');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    
+    // Configuration for the lines
+    const lines = [
+        { color: '#22c55e', data: [], speed: 0.5, volatility: 6 }, // Green
+        { color: '#ef4444', data: [], speed: 0.8, volatility: 10 }, // Red
+        { color: '#eab308', data: [], speed: 0.3, volatility: 3 } // Yellow
+    ];
+
+    function resize() {
+        width = canvas.width = canvas.offsetWidth;
+        height = canvas.height = canvas.offsetHeight;
+        
+        // Reset lines on resize to prevent stretching
+        lines.forEach(line => {
+            line.data = new Array(Math.ceil(width / 5)).fill(height / 2);
+        });
+    }
+
+    function update() {
+        ctx.clearRect(0, 0, width, height);
+
+        // 1. Draw Grid
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        for (let x = 0; x < width; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, height); }
+        for (let y = 0; y < height; y += 40) { ctx.moveTo(0, y); ctx.lineTo(width, y); }
+        ctx.stroke();
+
+        // 2. Slow Down Control
+        const shouldUpdateData = frameCount % 1 === 0; 
+
+        lines.forEach(line => {
+            ctx.beginPath();
+            ctx.strokeStyle = line.color;
+            ctx.lineWidth = 2;
+
+            if (shouldUpdateData) {
+                // Shift points left
+                for (let i = 0; i < line.data.length - 1; i++) {
+                    line.data[i] = line.data[i + 1];
+                }
+
+                // Generate smoother point
+                let lastY = line.data[line.data.length - 2];
+                
+                // REDUCE THIS MULTIPLIER (currently 2) to reduce vertical jumpiness
+                let change = (Math.random() - 0.5) * line.volatility * 2; 
+                
+                // WEIGHTED AVERAGE: Pulls the line back toward the center 
+                // so it doesn't wander off the screen too often
+                let pullToCenter = (height / 2 - lastY) * 0.05;
+                
+                let newY = lastY + change + pullToCenter;
+
+                // Constrain
+                if (newY < 10) newY = 10;
+                if (newY > height - 10) newY = height - 10;
+
+                line.data[line.data.length - 1] = newY;
+            }
+
+            // 3. Render
+            for (let i = 0; i < line.data.length; i++) {
+                const x = i * 5;
+                if (i === 0) ctx.moveTo(x, line.data[i]);
+                else ctx.lineTo(x, line.data[i]);
+            }
+            ctx.stroke();
+
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.fillStyle = line.color + '05'; // Lowered opacity for cleaner look
+            ctx.fill();
+        });
+
+        frameCount++;
+        requestAnimationFrame(update);
+    }
+
+        window.addEventListener('resize', resize);
+        resize();
+        update();
+})();
+
 // Initial Load
 renderWatchlist();
 loadChart(watchlist[0].symbol);
