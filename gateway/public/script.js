@@ -151,14 +151,14 @@ ragInput.addEventListener('keypress', (e) => {
 // --- REFRESH AI & SCRAPE BUTTON LOGIC ---
 document.getElementById('refreshAllBtn').addEventListener('click', async () => {
     const btn = document.getElementById('refreshAllBtn');
-    const originalText = btn.innerText;
+    const originalText = "Refresh AI & Scrape";
     
     // UI Feedback
     btn.innerText = "Processing Scrape & AI...";
     btn.disabled = true;
 
     try {
-        // This calls the endpoint that triggers Redis AND generates a new AI Report
+        // This calls the backend that triggers Redis AND generates a new AI Report
         const resp = await fetch('/api/refresh-all', { method: 'POST' });
         const data = await resp.json();
 
@@ -172,15 +172,14 @@ document.getElementById('refreshAllBtn').addEventListener('click', async () => {
         refreshFeed();
 
         btn.innerText = "System Updated";
+    } catch (err) {
+        console.error("Refresh All Error:", err);
+        btn.innerText = "Error: Try Again";
+    } finally {
         setTimeout(() => { 
             btn.innerText = originalText; 
             btn.disabled = false; 
         }, 3000);
-
-    } catch (err) {
-        console.error("Refresh All Error:", err);
-        btn.innerText = "Error: Try Again";
-        btn.disabled = false;
     }
 });
 
@@ -247,13 +246,12 @@ async function sendChat() {
 
 document.getElementById('sendBtn').onclick = sendChat;
 
+// --- BUTTON 1: REFRESH AI & SCRAPE (The Big Task) ---
 document.getElementById('refreshAllBtn').addEventListener('click', async () => {
     const btn = document.getElementById('refreshAllBtn');
+    const originalText = "Refresh AI & Scrape";
+    
     btn.innerText = "Processing Scrape & AI...";
-document.getElementById('refreshBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('refreshBtn');
-    const originalText = btn.innerText;
-    btn.innerText = "Scraping...";
     btn.disabled = true;
 
     try {
@@ -261,22 +259,48 @@ document.getElementById('refreshBtn').addEventListener('click', async () => {
         const data = await resp.json();
 
         if (data.report) {
-            // Update the UI Summary Box
             document.getElementById('summaryText').innerText = data.report;
             document.getElementById('lastUpdated').innerText = `Last Updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
-            
-            // Re-run your feed refresh to show the new headlines the scraper just found
-            if (typeof refreshFeed === 'function') refreshFeed(); 
         }
-
+        
+        // Also update the card list while we're at it
+        refreshFeed();
         btn.innerText = "System Updated";
     } catch (err) {
+        console.error(err);
         btn.innerText = "Error: Try Again";
     } finally {
         setTimeout(() => { 
-            btn.innerText = "Refresh AI & Scrape"; 
+            btn.innerText = originalText; 
             btn.disabled = false; 
         }, 3000);
+    }
+});
+
+// --- BUTTON 2: REFRESH FEED LIST (The Fast Task) ---
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('refreshBtn');
+    const originalText = "Refresh Feed List";
+    
+    btn.innerText = "Syncing...";
+    btn.disabled = true;
+
+    try {
+        // Just triggers a new scrape without the heavy AI summary
+        await fetch('/api/trigger-scrape', { method: 'POST' });
+        
+        // Wait a few seconds for the worker, then refresh the UI cards
+        setTimeout(() => {
+            refreshFeed();
+            btn.innerText = "Feed Updated";
+            setTimeout(() => { 
+                btn.innerText = originalText; 
+                btn.disabled = false; 
+            }, 2000);
+        }, 4000);
+    } catch (err) {
+        btn.innerText = "Error";
+        btn.disabled = false;
     }
 });
 
