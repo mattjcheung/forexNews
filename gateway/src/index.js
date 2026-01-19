@@ -129,6 +129,47 @@ app.post("/api/refresh-all", async (req, res) => {
     }
 });
 
+// POST: Thematic Chatbot
+app.post("/api/chat", async (req, res) => {
+    const { message } = req.body;
+    try {
+        // 1. Fetch the 10 most recent news items for context
+        const newsResult = await pool.query(`
+            SELECT content, source, created_at 
+            FROM market_news 
+            ORDER BY created_at DESC 
+            LIMIT 10
+        `);
+
+        // 2. Format that news into a string
+        const contextString = newsResult.rows
+            .map(n => `[${n.source} - ${n.created_at}]: ${n.content}`)
+            .join("\n");
+
+        // 3. Send to OpenAI with the context included in the system prompt
+        const completion = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo",
+            messages: [
+                {
+                    role: "system", 
+                    content: `You are APA INTEL, a Australian financial expert. 
+                    Use the following recent news to answer the user's query. 
+                    If the information isn't in the context, say you don't have data on that yet.
+                    
+                    CONTEXT:
+                    ${contextString}` 
+                },
+                { role: "user", content: message }
+            ]
+        });
+
+        res.json({ reply: completion.choices[0].message.content });
+    } catch (err) {
+        console.error("Chat error:", err);
+        res.status(500).json({ error: "Chat error" });
+    }
+});
+
 // Helper for Summarization
 async function generateAndStoreReport() {
     const result = await pool.query(`
@@ -145,7 +186,7 @@ async function generateAndStoreReport() {
         messages: [
             { 
                 role: "system", 
-                content: "You are a senior analyst. Summarize these headlines in 4 professional bullet points. Use ONLY the provided data." 
+                content: "You are a senior analyst based in Australia. Summarize these headlines in 4 professional bullet points. Use ONLY the provided data." 
             },
             { role: "user", content: context }
         ]
@@ -164,27 +205,6 @@ async function generateAndStoreReport() {
         isCached: false 
     };
 }
-
-// POST: Thematic Chatbot
-app.post("/api/chat", async (req, res) => {
-    const { message } = req.body;
-    try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            messages: [
-                {
-                    role: "system", 
-                    content: "You are APA INTEL. Only discuss finance and markets. If asked about other things, decline politely." 
-                },
-                { role: "user", content: message }
-            ]
-        });
-
-        res.json({ reply: completion.choices[0].message.content });
-    } catch (err) {
-        res.status(500).json({ error: "Chat error" });
-    }
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Gateway Live on port ${PORT}`));
