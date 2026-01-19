@@ -1,0 +1,30 @@
+services:
+  db:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports: ["5432:5432"]
+
+  gateway:
+    build: .
+    command: npm run start-gateway
+    ports: ["3000:3000"]
+    env_file: .env
+    depends_on: [db, redis]
+
+  worker:
+    build: .
+    command: npm run start-worker
+    env_file: .env
+    depends_on: [db, redis]
+
+  redis:
+    image: redis:alpine
+    ports: ["6379:6379"]
+
+volumes:
+  postgres_data:

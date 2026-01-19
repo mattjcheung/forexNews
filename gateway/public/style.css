@@ -1,0 +1,230 @@
+:root {
+    --bg-dark: #0f172a;
+    --sidebar-bg: #111827;
+    --card-bg: #1e293b;
+    --accent: #38bdf8;
+    --text-main: #f8fafc;
+    --text-dim: #94a3b8;
+    --border: #334155;
+    --lhs-width: 400px;
+    --rhs-width: 380px;
+}
+
+body { 
+    background-color: var(--bg-dark); 
+    color: var(--text-main); 
+    font-family: 'Inter', sans-serif;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+
+/* Header & Footer Styling */
+.global-header { 
+    text-align: center; 
+    padding-top: 4px; 
+    padding-bottom: 1px;
+    border-bottom: 1px solid var(--border); 
+    background: var(--sidebar-bg); }
+.global-header h1 { 
+    margin-bottom: 0;
+    font-size: 2rem; 
+    letter-spacing: 2px; 
+    color: var(--accent); }
+.global-header p { 
+    font-size: 0.65rem; 
+    color: var(--text-dim); 
+    text-transform: uppercase; }
+
+.app-footer { display: flex; justify-content: center; gap: 40px; padding: 12px; border-top: 1px solid var(--border); background: var(--sidebar-bg); }
+.app-footer a { color: var(--text-dim); text-decoration: none; padding-bottom: 10px; font-size: 0.7rem; font-weight: 700; transition: 0.2s; }
+.app-footer a:hover { color: var(--accent); }
+
+/* Main Grid Layout */
+.app-layout {
+    display: grid;
+    grid-template-columns: var(--lhs-width) 1fr var(--rhs-width);
+    flex: 1;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-layout.rhs-collapsed {
+    grid-template-columns: var(--lhs-width) 1fr 0px;
+}
+
+/* Sidebar & Cards (Original Dimensions Reverted) */
+.sidebar { background: var(--sidebar-bg); border: 1px solid var(--border); padding: 20px; overflow-y: auto; }
+.feed-container { padding: 30px; overflow-y: auto; }
+
+.card {
+    background: var(--card-bg); padding: 24px; border-radius: 12px;
+    border: 1px solid var(--border); margin-bottom: 20px;
+}
+
+.card .action-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: var(--card-bg);   /* Darker background */
+    color: var(--accent) !important; /* Forces your light blue color */
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;        /* Removes the ugly underline */
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+/* Hover state for the link */
+.card .action-btn:hover {
+    background: var(--accent);
+    color: var(--bg-dark) !important; /* Text turns dark when background turns blue */
+    border-color: var(--accent);
+}
+
+.section-label {
+    display: block;
+    margin-bottom: 15px; 
+    letter-spacing: 1px;
+    font-size: 1rem;      /* Increased from default small size */
+    font-weight: 800;        /* Makes it "pop" more as a header */
+    color: var(--text-main); /* Ensure it's bright and readable */
+}
+
+#watchlistContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;           /* Vertical space between each stock/crypto symbol */
+    margin: 5px; /* Space between the list and the input field below */
+}
+
+.add-to-watchlist {
+    display: flex;
+    gap: 15px;            /* Space between the text input and the (+) button */
+    padding-bottom: 10px;
+}
+
+.title-row {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+}
+
+#tradingview_widget {
+    height: 400px;
+    width: 100%;
+}
+
+/* Optional: Make sure the heading doesn't have a huge bottom margin */
+.title-row h1 {
+    margin: 0;
+}
+
+/* Chatbot UI */
+.context-panel {
+    background: var(--sidebar-bg); border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+}
+
+.chat-history { 
+    flex: 1; 
+    padding: 20px; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    /* Ensures messages don't stretch the container */
+    width: 100%; 
+    box-sizing: border-box;
+}
+
+.msg { 
+    padding: 10px 14px; 
+    border-radius: 8px; 
+    font-size: 0.9rem; 
+    max-width: 85%; 
+    line-height: 1.4; 
+    
+    /* THE FIX: These lines prevent horizontal overflow */
+    white-space: pre-wrap;      /* Preserves line breaks but wraps text */
+    word-wrap: break-word;     /* Legacy support */
+    overflow-wrap: break-word; /* Modern standard */
+    display: inline-block;     /* Ensures background fits text size */
+}
+
+.chat-input-area input { 
+    flex: 1; 
+    background: #0f172a; 
+    border: 1px solid var(--border); 
+    color: white; 
+    padding: 10px; 
+    border-radius: 6px;
+    min-width: 0; /* Prevents input from pushing the layout wide */
+}
+
+.panel-header {
+    padding-left: 24px;
+    padding-top: 24px;
+    /* border-bottom: 1px solid var(--border-color); /* Optional: adds a clean line under the header */
+    display: flex;
+    align-items: center;
+}
+
+.panel-header h3 {
+    margin: 0;           /* Removes default browser margins that might mess up your spacing */
+    font-size: 1.2rem;
+}
+
+.chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+
+.msg { padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; max-width: 85%; line-height: 1.4; }
+.user-msg { align-self: flex-end; background: var(--accent); color: #000; font-weight: 500; }
+.ai-msg { align-self: flex-start; background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); }
+
+.chat-input-area { padding: 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+.chat-input-area input { flex: 1; background: #0f172a; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; }
+
+/* Buttons */
+.chat-toggle-btn { 
+    margin-top: auto; padding: 12px; background: transparent; 
+    border: 1px solid var(--accent); color: var(--accent); 
+    border-radius: 6px; cursor: pointer; font-weight: bold; 
+}
+.chat-toggle-btn:hover { background: var(--accent); color: #000; }
+
+.refresh-btn {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.refresh-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.nav-item {
+    color: var(--accent);       /* This is your light blue (#38bdf8) */
+    cursor: pointer;
+    transition: color 0.2s ease;
+    font-size: 0.95rem;         /* Slightly larger text for the items */
+    padding: 8px 0;             /* Adds vertical hit area */
+}
+
+.nav-item:hover {
+    color: #0ea5e9;            /* A slightly deeper, richer blue */
+}
+
+.nav-item.active {
+    color: var(--text-main);    /* Makes the active one white to stand out */
+    font-weight: bold;
+}

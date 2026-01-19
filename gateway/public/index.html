@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APA INTEL</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="global-header">
+        <h1>APA INTEL</h1>
+        <p>Live news from all over.</p>
+    </header>
+
+    <div class="app-layout rhs-collapsed" id="mainLayout">
+        <aside class="sidebar">
+            <div class="nav-section">
+                <small class="section-label">AI MARKET SUMMARY</small>
+                <div id="marketSummaryBox" style="padding: 15px; font-size: 0.85rem; background: var(--card-bg); border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);">
+                    <div id="summaryText">Loading periodic report...</div>
+                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--border);">
+                    <small id="lastUpdated" style="color: var(--text-dim); display: block;"></small>
+                </div>
+                <button id="refreshAllBtn" class="refresh-btn" style="width: 100%; margin-bottom: 20px;">Refresh AI & Scrape</button>
+            </div>
+
+            <div class="nav-section">
+                <small class="section-label">ACTIVE WATCHLISTS</small>
+                <div id="watchlistContainer"></div>
+                <div class="add-to-watchlist">
+                    <input type="text" id="newSymbol" placeholder="e.g. BTCUSD">
+                    <button id="addSymbolBtn" class="action-btn">+</button>
+                </div>
+            </div>
+
+            <div id="chart-area" style="height: 400px; width: 100%; margin-bottom: 20px; background: var(--card-bg); border-radius: 12px; overflow: auto;">
+                <div id="tradingview_widget"></div>
+            </div>
+        </aside>
+
+        <main class="feed-container">
+            <header class="feed-header">
+                <div class="header-left">
+                    <div class="header-content">
+                        <div class="title-row">
+                            <h1>Live News Feed</h1>
+                            <button id="toggleRHS" class="chat-toggle-btn">AI Assistant</button>
+                            <button id="refreshBtn" class="refresh-btn">Refresh Feed List</button>
+                        </div>
+                        <p class="subtitle">Confidence-weighted market signals</p>
+                    </div>
+                </div>
+            </header>
+
+            <div id="intelCards" class="card-grid">
+                <div class="card loading-card">
+                    <div class="shimmer"></div>
+                    <p>Initializing neural signals...</p>
+                </div>
+            </div>
+        </main>
+
+        <section class="context-panel">
+            <div class="panel-header"><h3>Intelligence Assistant</h3></div>
+            <div id="chatHistory" class="chat-history">
+                <div class="msg ai-msg">I'm restricted to financial and market queries. How can I help?</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="ragInput" placeholder="Ask about financial news...">
+                <button id="sendBtn">➤</button>
+            </div>
+        </section>
+    </div>
+
+    <footer class="app-footer">
+        <a href="about.html">ABOUT</a>
+        <a href="creator.html">MEET THE CREATOR</a>
+        <a href="upgrade.html">UPGRADE</a>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
