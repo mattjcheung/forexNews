@@ -1,205 +1,94 @@
-# Event-Driven Agentic RAG Platform
+# APA INTEL: Event-Driven Agentic RAG Platform
 
 ## Overview
 
-This project implements an **event-driven microservices architecture** designed around an **agentic Retrieval-Augmented Generation (RAG) pipeline**.
-The core philosophy is to **explicitly separate “thinking” (reasoning & orchestration)** from **“data gathering” (scraping, retrieval, and embedding)**.
+APA INTEL is an **event-driven microservices platform** designed for real-time financial intelligence. Unlike standard "stateless" chat interfaces, this system maintains a **persistent, proprietary knowledge base** by separating high-frequency data ingestion from AI-driven reasoning.
 
-Rather than treating AI as a stateless chat interface, this system continuously builds and maintains a **persistent, proprietary financial knowledge base** that improves in value over time.
-
-The architecture is designed for:
-
-* **High concurrency**
-* **Low latency**
-* **Auditability and compliance**
-* **Cost-efficient AI usage**
+The core objective is to provide a unified "Single Pane of Glass" for market news, combining raw live feeds with a "Senior Analyst" AI layer that summarizes the state of the market on demand.
 
 ---
 
-## High-Level Architecture
+## System Architecture
 
-```
-┌──────────────┐
-│   Dashboard  │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────────┐
-│ Orchestrator API │  (Node.js / TypeScript)
-└──────┬───────────┘
-       │ Redis Streams (events)
-       ▼
-┌──────────────┐     ┌──────────────┐
-│  Watchman    │ ... │  Watchman    │  (Horizontal scaling)
-│ (Scraping)   │     │ (Scraping)   │
-└──────┬───────┘     └──────┬───────┘
-       ▼                    ▼
-┌──────────────────────────────────┐
-│ PostgreSQL + pgvector            │
-│ (Structured + Vector Data Store) │
-└──────────────────────────────────┘
-       │
-       ▼
-┌──────────────────┐
-│  Reasoning Agent │
-│  (Agentic RAG)   │
-└──────┬───────────┘
-       ▼
-┌──────────────────┐
-│ Semantic Cache   │
-│ (Redis Vector)   │
-└──────────────────┘
-```
+The platform is split into three distinct layers:
+
+1. **The Intelligence Dashboard (Frontend):** A dark-themed, Bloomberg-style UI featuring dynamic HTML5 Canvas market visualizations, a real-time news feed, and an integrated TradingView technical analysis suite.
+2. **The Orchestrator (Backend Gateway):** A Node.js API that manages the PostgreSQL connection, handles the OpenAI RAG pipeline, and dispatches scraper tasks via Redis.
+3. **The Watchman (Worker Service):** An asynchronous worker that listens to the Redis task queue to perform high-frequency scraping and data normalization without blocking the user interface.
 
 ---
 
-## Core Design Principles
+## Core Features
 
-### 1. Separation of Concerns (Agentic RAG)
+### 1. Hybrid Intelligence Feed
 
-The system enforces a strict boundary between:
+The system ingests raw market data into **PostgreSQL**. The UI provides a confidence-weighted feed where "High Impact" news is visually flagged based on priority scores generated during the ingestion phase.
 
-* **Data Gathering**
+### 2. Agentic Market Summarization
 
-  * Scraping
-  * Normalization
-  * Embedding
-  * Storage
+Instead of summarizing on every page load (which is slow and expensive), the system uses a **Budget-Saving Cache Strategy**:
 
-* **Reasoning**
+* **Automatic Cache:** The system fetches a pre-generated report if it's less than 3 hours old.
+* **Manual Override:** Users can trigger a "Full Refresh," which pushes an `INGEST_NEWS` command to Redis, waits for the worker, and then forces the OpenAI model to generate a fresh 4-point professional summary.
 
-  * Retrieval
-  * Context assembly
-  * Decision-making
-  * Output generation
+### 3. Integrated Technical Analysis
 
-This prevents:
+A dynamic Watchlist allows users to switch between various asset classes (Forex, Crypto, Indices). The system injects **TradingView SDK** widgets on the fly, allowing for immediate technical validation of the AI's textual insights.
 
-* Hallucinations caused by stale data
-* Hidden coupling between reasoning and retrieval
-* Non-auditable AI behaviour
+### 4. Thematic AI Chat
 
----
-
-### 2. Event-Driven by Default
-
-All inter-service communication occurs through **Redis Streams**, enabling:
-
-* Asynchronous workflows
-* Backpressure handling
-* Natural horizontal scaling
-* Replayable events for debugging and compliance
-
-No service ever blocks another.
-
----
-
-### 3. Horizontal Scalability
-
-The architecture is explicitly designed to scale **without architectural changes**.
-
-Example:
-
-* Run **10 Watchman services**
-* Scrape **100+ data sources concurrently**
-* Zero impact on user-facing latency
-
-This makes the system suitable for real-time financial monitoring workloads.
-
----
-
-### 4. Persistent Vector Knowledge Base
-
-This is **not** a stateless chatbot.
-
-All retrieved and processed information is embedded and stored in **PostgreSQL with pgvector**, allowing:
-
-* Historical semantic search
-* Long-term trend analysis
-* Knowledge accumulation over time
-* Reduced dependence on external APIs
-
-Your data moat grows with every query.
-
----
-
-### 5. Cost-Efficient AI Usage (Semantic Cache)
-
-A **Semantic Cache** backed by **Redis Vector Library (Redis VL)** stores previous AI outputs.
-
-If a new query is semantically similar to a past one:
-
-* The cached result is returned instantly
-* No LLM call is made
-* Latency and inference costs are drastically reduced
-
-This is critical for production-scale AI systems.
-
----
-
-### 6. Auditability & Compliance
-
-Every stage of the pipeline is logged:
-
-* Retrieval
-* Context selection
-* Reasoning steps
-* Final output
-
-This design supports:
-
-* Regulatory compliance
-* Internal audits
-* Explainability requirements for financial institutions (e.g. APA-style governance)
-
-No black-box decisions.
+An integrated "Senior Analyst" chatbot is restricted via system-level prompting to only discuss finance and markets. This ensures the platform remains a professional tool and prevents "hallucination drift" into non-financial topics.
 
 ---
 
 ## Technology Stack
 
-| Component        | Technology                | Reasoning                                                 |
-| ---------------- | ------------------------- | --------------------------------------------------------- |
-| Orchestration    | Docker Compose            | Manages all services as a single reproducible ecosystem   |
-| Primary Database | PostgreSQL + pgvector     | Combines structured financial data with vector embeddings |
-| Messaging        | Redis Streams             | Low-latency, event-driven communication                   |
-| Logic Layer      | Node.js (TypeScript)      | Type safety is critical for financial calculations        |
-| Semantic Cache   | Redis Vector Library (VL) | Fast semantic lookup for cached AI responses              |
+| Component | Technology | Role |
+| --- | --- | --- |
+| **Frontend** | HTML5, CSS3, Vanilla JS | High-performance UI with Canvas animations |
+| **API Gateway** | Node.js (Express) | Orchestration and OpenAI integration |
+| **Messaging** | Redis | Event-driven task queue for scraping |
+| **Database** | PostgreSQL | Persistent storage for news and AI reports |
+| **LLM** | OpenAI GPT-3.5 Turbo | RAG-driven reasoning and summarization |
+| **Charts** | TradingView SDK | Professional-grade technical analysis |
 
 ---
 
-## Why This Architecture?
+## Current Workflow Logic
 
-### ✅ Asynchronous Scalability
-
-Services scale independently without coordination overhead.
-
-### ✅ Financial-Grade Safety
-
-Type safety, deterministic data flow, and full traceability.
-
-### ✅ Cost Control
-
-Semantic caching dramatically reduces repeated inference costs.
-
-### ✅ Long-Term Value Creation
-
-The system builds a growing, proprietary intelligence layer instead of ephemeral chat outputs.
+1. **Ingestion:** The user or a cron job pushes a task to Redis.
+2. **Scraping:** The "Watchman" worker pulls the task, scrapes financial sources, and populates the `market_news` table.
+3. **Reasoning:** When a report is requested, the Gateway queries the latest 15 headlines, sends them to OpenAI with a "Senior Analyst" persona, and stores the result in `global_reports`.
+4. **Delivery:** The UI pulls the latest report and live feed, updating the "Single Pane of Glass."
 
 ---
 
-## Status
+## How to Run
 
-🚧 **Draft / Early Architecture**
-This repository currently focuses on architectural correctness and system design.
-Implementation details may evolve as performance and compliance requirements are refined.
+1. **Environment Variables:**
+```env
+DATABASE_URL=your_postgres_url
+REDIS_URL=your_redis_url
+OPENAI_API_KEY=your_key
+PORT=3000
+
+```
+
+
+2. **Install & Start:**
+```bash
+npm install
+npm start
+
+```
+
+
+3. **Initialize:** Click "Refresh AI & Scrape" on the dashboard to trigger the first data ingestion and report generation.
 
 ---
 
-## Future Improvements
+## Future Roadmap
 
-* Kubernetes deployment
-* Fine-grained access control
-* Model-agnostic LLM abstraction
-* Automated embedding lifecycle management
-* Time-decay weighting for financial relevance
+* **Vector Search:** Implementing `pgvector` for historical semantic search across years of financial data.
+* **WebSockets:** Replacing the 30-second polling with real-time "pushes" from the worker to the UI.
+* **Multi-Model Support:** Adding Claude 3.5 Sonnet for deeper reasoning in the Market Summary phase.
