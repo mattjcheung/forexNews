@@ -151,6 +151,32 @@ body {
     display: inline-block;     /* Ensures background fits text size */
 }
 
+/* Enhanced Chat Input Area */
+.chat-input-area { 
+    padding: 20px; 
+    border-top: 1px solid var(--border); 
+    display: flex; 
+    flex-direction: column; /* Stack input-wrapper and disclaimer vertically */
+    gap: 10px; 
+}
+
+.input-wrapper {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+}
+
+/* The Subtle Subtext Styling */
+.chat-disclaimer {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-align: center;
+    margin: 0;
+    opacity: 0.7;
+    font-style: italic;
+    letter-spacing: 0.5px;
+}
+
 .chat-input-area input { 
     flex: 1; 
     background: #0f172a; 
