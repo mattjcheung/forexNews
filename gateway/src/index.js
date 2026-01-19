@@ -116,19 +116,26 @@ app.get("/api/market-report", async (req, res) => {
 // POST: Full Refresh (Scrape + Summarize)
 app.post("/api/refresh-all", async (req, res) => {
     try {
+        console.log("🔄 Full System Refresh Requested...");
+        
+        // 1. Tell the worker to start scraping new data
         await redisClient.lPush('tasks', 'INGEST_NEWS');
 
-        // Wait for worker to finish scrape
-        setTimeout(async () => {
-            const reportData = await generateAndStoreReport();
-            res.json(reportData);
-        }, 5000);
+        // 2. We wait a few seconds for the worker to populate the DB with at least some new headlines
+        // Using a Promise-based delay is cleaner than a standard setTimeout callback
+        await new Promise(resolve => setTimeout(resolve, 6000)); 
+
+        // 3. Generate the report using the freshest data available in the DB
+        const reportData = await generateAndStoreReport();
+        
+        // 4. Send the data back to the UI
+        res.json(reportData);
 
     } catch (err) {
-        res.status(500).json({ error: "Refresh failed" });
+        console.error("Refresh Error:", err);
+        res.status(500).json({ error: "Refresh failed", details: err.message });
     }
 });
-
 // Helper for Summarization
 async function generateAndStoreReport() {
     const result = await pool.query(`

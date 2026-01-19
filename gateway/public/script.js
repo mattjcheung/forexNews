@@ -185,22 +185,32 @@ async function sendChat() {
 
 document.getElementById('sendBtn').onclick = sendChat;
 
-document.getElementById('refreshBtn').addEventListener('click', async () => {
-    const btn = document.getElementById('refreshBtn');
-    const originalText = btn.innerText;
-    btn.innerText = "Scraping...";
+document.getElementById('refreshAllBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('refreshAllBtn');
+    btn.innerText = "Processing Scrape & AI...";
     btn.disabled = true;
 
     try {
-        await fetch('/api/trigger-scrape', { method: 'POST' });
-        setTimeout(() => {
-            refreshFeed();
-            btn.innerText = "Complete";
-            setTimeout(() => { btn.innerText = originalText; btn.disabled = false; }, 2000);
-        }, 5000);
+        const resp = await fetch('/api/refresh-all', { method: 'POST' });
+        const data = await resp.json();
+
+        if (data.report) {
+            // Update the UI Summary Box
+            document.getElementById('summaryText').innerText = data.report;
+            document.getElementById('lastUpdated').innerText = `Last Updated: ${new Date(data.timestamp).toLocaleTimeString()}`;
+            
+            // Re-run your feed refresh to show the new headlines the scraper just found
+            if (typeof refreshFeed === 'function') refreshFeed(); 
+        }
+
+        btn.innerText = "System Updated";
     } catch (err) {
-        btn.innerText = originalText;
-        btn.disabled = false;
+        btn.innerText = "Error: Try Again";
+    } finally {
+        setTimeout(() => { 
+            btn.innerText = "Refresh AI & Scrape"; 
+            btn.disabled = false; 
+        }, 3000);
     }
 });
 
